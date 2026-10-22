@@ -1,30 +1,78 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { api, API_URL } from '../api.js';
+import {
+  importPublicKey,
+  unwrapConversationKey,
+  encryptMessage,
+  decryptMessage,
+} from '../crypto.js';
 import Sidebar from './Sidebar.jsx';
 import ChatWindow from './ChatWindow.jsx';
 import NewChatModal from './NewChatModal.jsx';
 
-export default function ChatLayout({ session, onLogout }) {
+const UNREADABLE = '🔒 Unable to decrypt this message';
+
+export default function ChatLayout({ session, privateKey, onLogout }) {
   const { user: me, token } = session;
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const [messages, setMessages] = useState({}); // conversationId -> message[]
+  const [messages, setMessages] = useState({}); // conversationId -> decrypted message[]
   const [online, setOnline] = useState(new Set());
   const [typing, setTyping] = useState({}); // conversationId -> { userId: username }
   const [showNewChat, setShowNewChat] = useState(false);
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
+  const keysRef = useRef(new Map()); // conversationId -> Promise<CryptoKey>
+  const conversationsRef = useRef([]);
+  conversationsRef.current = conversations;
+
+  /** Unlocks (once) the conversation key that was wrapped for me. */
+  const keyFor = useCallback(
+    (conversation) => {
+      if (!keysRef.current.has(conversation.id)) {
+        const promise = importPublicKey(conversation.key.creatorPublicKey).then((creatorKey) =>
+          unwrapConversationKey(conversation.key, privateKey, creatorKey)
+        );
+        promise.catch(() => keysRef.current.delete(conversation.id)); // allow a retry
+        keysRef.current.set(conversation.id, promise);
+      }
+      return keysRef.current.get(conversation.id);
+    },
+    [privateKey]
+  );
+
+  const decryptOne = useCallback(
+    async (conversation, encrypted) => {
+      try {
+        return await decryptMessage(await keyFor(conversation), encrypted);
+      } catch {
+        return UNREADABLE;
+      }
+    },
+    [keyFor]
+  );
+
+  /** Adds a readable `preview` of the last message for the chat list. */
+  const withPreview = useCallback(
+    async (conversation) => ({
+      ...conversation,
+      preview: conversation.lastMessage
+        ? await decryptOne(conversation, conversation.lastMessage)
+        : null,
+    }),
+    [decryptOne]
+  );
 
   // Load conversations once
   useEffect(() => {
     api('/api/conversations', { token })
-      .then((data) => {
-        setConversations(data.conversations);
+      .then(async (data) => {
+        setConversations(await Promise.all(data.conversations.map(withPreview)));
         setOnline(new Set(data.online));
       })
       .catch(onLogout); // token expired or invalid
-  }, [token, onLogout]);
+  }, [token, onLogout, withPreview]);
 
   // Real-time connection
   useEffect(() => {
@@ -37,23 +85,23 @@ export default function ChatLayout({ session, onLogout }) {
       if (err.message === 'Not signed in') onLogout();
     });
 
-    socket.on('message:new', (message) => {
-      setMessages((prev) =>
-        prev[message.conversationId]
-          ? {
-              ...prev,
-              [message.conversationId]: prev[message.conversationId].some((m) => m.id === message.id)
-                ? prev[message.conversationId]
-                : [...prev[message.conversationId], message],
-            }
-          : prev
-      );
+    socket.on('message:new', async (encrypted) => {
+      const conv = conversationsRef.current.find((c) => c.id === encrypted.conversationId);
+      if (!conv) return;
+      const message = { ...encrypted, body: await decryptOne(conv, encrypted) };
+
+      setMessages((prev) => {
+        const list = prev[message.conversationId];
+        if (!list || list.some((m) => m.id === message.id)) return prev;
+        const next = [...list, message].sort((x, y) => x.id - y.id);
+        return { ...prev, [message.conversationId]: next };
+      });
       // Move the conversation to the top with its new preview
       setConversations((prev) => {
-        const conv = prev.find((c) => c.id === message.conversationId);
-        if (!conv) return prev;
-        const updated = { ...conv, lastMessage: message.body, lastMessageAt: message.createdAt };
-        return [updated, ...prev.filter((c) => c.id !== conv.id)];
+        const current = prev.find((c) => c.id === message.conversationId);
+        if (!current) return prev;
+        const updated = { ...current, preview: message.body, lastMessageAt: message.createdAt };
+        return [updated, ...prev.filter((c) => c.id !== current.id)];
       });
       // Someone who just sent a message is no longer typing
       setTyping((prev) => {
@@ -63,9 +111,10 @@ export default function ChatLayout({ session, onLogout }) {
       });
     });
 
-    socket.on('conversation:new', (conversation) => {
+    socket.on('conversation:new', async (conversation) => {
+      const ready = await withPreview(conversation);
       setConversations((prev) =>
-        prev.some((c) => c.id === conversation.id) ? prev : [conversation, ...prev]
+        prev.some((c) => c.id === ready.id) ? prev : [ready, ...prev]
       );
     });
 
@@ -87,24 +136,37 @@ export default function ChatLayout({ session, onLogout }) {
     });
 
     return () => socket.disconnect();
-  }, [token, onLogout]);
+  }, [token, onLogout, decryptOne, withPreview]);
 
-  // Load history the first time a conversation is opened
+  const active = conversations.find((c) => c.id === activeId);
+
+  // Load and decrypt history the first time a conversation is opened
   useEffect(() => {
-    if (!activeId || messages[activeId]) return;
-    api(`/api/conversations/${activeId}/messages`, { token }).then((data) =>
-      setMessages((prev) => ({ ...prev, [activeId]: data.messages }))
-    );
-  }, [activeId, messages, token]);
+    if (!active || messages[active.id]) return;
+    let cancelled = false;
+    api(`/api/conversations/${active.id}/messages`, { token }).then(async (data) => {
+      const decrypted = await Promise.all(
+        data.messages.map(async (m) => ({ ...m, body: await decryptOne(active, m) }))
+      );
+      if (!cancelled) setMessages((prev) => ({ ...prev, [active.id]: decrypted }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, messages, token, decryptOne]);
 
   const sendMessage = useCallback(
-    (body) =>
-      new Promise((resolve, reject) => {
-        socketRef.current.emit('message:send', { conversationId: activeId, body }, (res) =>
-          res.error ? reject(new Error(res.error)) : resolve(res.message)
+    async (body) => {
+      const encrypted = await encryptMessage(await keyFor(active), body);
+      return new Promise((resolve, reject) => {
+        socketRef.current.emit(
+          'message:send',
+          { conversationId: active.id, ...encrypted },
+          (res) => (res.error ? reject(new Error(res.error)) : resolve(res.message))
         );
-      }),
-    [activeId]
+      });
+    },
+    [active, keyFor]
   );
 
   const sendTyping = useCallback(
@@ -112,15 +174,14 @@ export default function ChatLayout({ session, onLogout }) {
     [activeId]
   );
 
-  const handleCreated = (conversation) => {
+  const handleCreated = async (conversation) => {
+    const ready = await withPreview(conversation);
     setConversations((prev) =>
-      prev.some((c) => c.id === conversation.id) ? prev : [conversation, ...prev]
+      prev.some((c) => c.id === ready.id) ? prev : [ready, ...prev]
     );
-    setActiveId(conversation.id);
+    setActiveId(ready.id);
     setShowNewChat(false);
   };
-
-  const active = conversations.find((c) => c.id === activeId);
 
   return (
     <div className={`app ${active ? 'has-active' : ''}`}>
@@ -151,6 +212,7 @@ export default function ChatLayout({ session, onLogout }) {
         <main className="empty-state">
           <h2>Welcome, {me.username} 👋</h2>
           <p className="muted">Pick a conversation or start a new one.</p>
+          <p className="muted small">🔒 Messages are end-to-end encrypted.</p>
           <button className="primary" onClick={() => setShowNewChat(true)}>
             New chat
           </button>
@@ -158,7 +220,9 @@ export default function ChatLayout({ session, onLogout }) {
       )}
       {showNewChat && (
         <NewChatModal
+          me={me}
           token={token}
+          privateKey={privateKey}
           online={online}
           onCreated={handleCreated}
           onClose={() => setShowNewChat(false)}
