@@ -1,4 +1,4 @@
-# 💬 Chatter: a real-time chat app
+# Bestie: a real-time chat app
 
 A full-stack messaging app inspired by WhatsApp. Users can sign up, start one-to-one or group chats, and message each other instantly, with live typing indicators and online status.
 
