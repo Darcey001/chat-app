@@ -188,6 +188,18 @@ input:focus { border-color: var(--accent); }
 .sender { font-size: 0.8rem; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
 .time { float: right; margin: 6px 0 -4px 10px; font-size: 0.7rem; color: var(--muted); }
 
+.e2e-note {
+  align-self: center;
+  max-width: 420px;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--panel-alt);
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
 .typing-indicator { padding: 4px 2px; display: flex; align-items: center; gap: 6px; }
 .dots { display: inline-flex; gap: 3px; }
 .dots span {
