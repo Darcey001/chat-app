@@ -1,0 +1,14 @@
+{
+  "name": "chat-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time chat app: React + Node.js + Socket.IO",
+  "scripts": {
+    "build": "npm install --prefix server && npm install --prefix client --include=dev && npm run build --prefix client",
+    "start": "node server/src/index.js",
+    "test": "npm test --prefix server"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
