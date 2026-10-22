@@ -56,7 +56,7 @@ export default function Sidebar({
                     )}
                   </span>
                   <span className={`ellipsis small ${typers.length ? 'typing-text' : 'muted'}`}>
-                    {typers.length ? 'typing…' : c.lastMessage ?? 'No messages yet'}
+                    {typers.length ? 'typing…' : c.preview ?? 'No messages yet'}
                   </span>
                 </span>
               </button>
