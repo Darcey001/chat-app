@@ -86,6 +86,10 @@ export default function ChatWindow({
       </header>
 
       <div className="messages">
+        <p className="e2e-note">
+          🔒 Messages are end-to-end encrypted. No one outside this chat, not even the server,
+          can read them.
+        </p>
         {!messages && <p className="muted center">Loading…</p>}
         {messages?.length === 0 && <p className="muted center">Say hello 👋</p>}
         {messages?.map((m, i) => {
