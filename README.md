@@ -6,9 +6,8 @@ A full-stack messaging app inspired by WhatsApp. Users can sign up, start one-to
 
 **🔗 Live demo:** [chatter-axvv.onrender.com](https://chatter-axvv.onrender.com) · open it in two browsers and chat with yourself
 
-> 📸 *Add a screenshot or GIF here once you run it: `docs/screenshot.png`*
 
-## ✨ Features
+##  Features
 
 - **Accounts:** sign up and log in with hashed passwords (bcrypt) and JWT sessions
 - **Real-time messaging:** messages appear instantly for everyone in the chat (Socket.IO / WebSockets)
@@ -19,7 +18,7 @@ A full-stack messaging app inspired by WhatsApp. Users can sign up, start one-to
 - **Responsive design:** works on desktop and mobile, with automatic dark mode
 - **Security:** only members can read or post in a conversation, checked on every request and socket event
 
-## 🛠️ Tech stack
+## Tech stack
 
 | Layer     | Technology |
 |-----------|------------|
@@ -29,7 +28,7 @@ A full-stack messaging app inspired by WhatsApp. Users can sign up, start one-to
 | Auth      | JWT, bcrypt |
 | Testing   | Node test runner, GitHub Actions CI |
 
-## 🏗️ How it works
+##  How it works
 
 ```
 React app ──REST (login, history, create chat)──► Express API ──► SQLite
@@ -43,7 +42,7 @@ React app ──REST (login, history, create chat)──► Express API ──�
 - Each conversation is a Socket.IO *room*, so a message is only sent to that chat's members.
 - The server counts open connections per user, so someone with two tabs open stays "online" until both close.
 
-## 🚀 Run it locally
+## Run it locally
 
 You need [Node.js](https://nodejs.org) 18 or newer.
 
@@ -73,7 +72,7 @@ npm run build                     # installs everything and builds the React app
 JWT_SECRET=any-secret npm start   # app + API together on http://localhost:4000
 ```
 
-## ☁️ Deployment
+## Deployment
 
 The app is deployed as **one web service on [Render](https://render.com)**. In production, the Node server also serves the built React app, so the frontend, the REST API and the WebSocket connection all share one address, with no cross-origin setup.
 
@@ -81,7 +80,7 @@ The `render.yaml` file describes the whole setup (build command, start command, 
 
 > Note: on Render's free plan the service sleeps after 15 minutes without visitors (the first visit then takes about a minute), and the SQLite database resets when it restarts. That's fine for a demo. For permanent data, the next step is moving to PostgreSQL.
 
-## 🧪 Tests
+##  Tests
 
 ```bash
 cd server
@@ -90,7 +89,7 @@ npm test
 
 The tests start a real server and connect real socket clients. They check sign-up and login rules, real-time delivery between two users, typing indicators, message history, group chats, and that people outside a chat can't read or post in it. They run automatically on every push with GitHub Actions.
 
-## 📁 Project structure
+## Project structure
 
 ```
 server/
@@ -104,7 +103,7 @@ client/
   src/api.js        API helper
 ```
 
-## 🗺️ What's next
+##  What's next
 
 - [ ] Read receipts (✓✓)
 - [ ] Image and file sharing
