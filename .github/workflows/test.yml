@@ -19,8 +19,9 @@ jobs:
           npm install
           npm test
 
-      - name: Client build
+      - name: Client encryption tests and build
         working-directory: client
         run: |
           npm install
+          npm test
           npm run build
