@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Server tests
+        working-directory: server
+        run: |
+          npm install
+          npm test
+
+      - name: Client build
+        working-directory: client
+        run: |
+          npm install
+          npm run build
