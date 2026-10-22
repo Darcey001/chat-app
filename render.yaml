@@ -1,0 +1,15 @@
+# Render Blueprint: one free web service that runs the server and serves the React app.
+# On render.com: New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: chatter
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: JWT_SECRET
+        generateValue: true
