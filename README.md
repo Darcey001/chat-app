@@ -4,7 +4,7 @@ A full-stack messaging app inspired by WhatsApp. Users can sign up, start one-to
 
 ![Tests](https://github.com/Darcey001/chat-app/actions/workflows/test.yml/badge.svg)
 
-**🔗 Live demo:** *add your Render link here* · open it in two browsers and chat with yourself
+**🔗 Live demo:** [chatter-axvv.onrender.com](https://chatter-axvv.onrender.com) · open it in two browsers and chat with yourself
 
 > 📸 *Add a screenshot or GIF here once you run it: `docs/screenshot.png`*
 
