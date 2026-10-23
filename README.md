@@ -137,6 +137,6 @@ client/
 - [x] Deploy live on Render
 - [ ] Move from SQLite to PostgreSQL so data persists between deploys
 
-## 👩🏾‍💻 Author
+## Author
 
 **Praise Emmanuel** · [GitHub](https://github.com/Darcey001) · [LinkedIn](https://www.linkedin.com/in/praise-emmanuel-894047223/)
