@@ -7,7 +7,7 @@ A full-stack messaging app inspired by WhatsApp. Users can sign up, start one-to
 **🔗 Live demo:** [chatter-axvv.onrender.com](https://chatter-axvv.onrender.com) · open it in two browsers and chat with yourself
 
 <p align="center">
-  <img src="docs/Screenshot%202026-10-22%20at%2021.39.37.png" alt="Chatter: two people chatting in real time" width="420">
+  <img src="docs/WhatsApp%20Image%202026-10-23%20at%2018.45.52.jpeg" alt="Chatter on a phone: an end-to-end encrypted chat with a live typing indicator" width="300">
 </p>
 
 
